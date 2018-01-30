@@ -1,7 +1,10 @@
+import java.awt.image.*;
 import java.io.*;
 import java.net.*;
 import java.util.*;
 import java.util.logging.*;
+
+import javax.imageio.*;
 
 public class MyServer {
     private final static int PORT = 13;
@@ -9,7 +12,7 @@ public class MyServer {
     private final static Logger errors = Logger.getLogger("errors");
 
     public static void main(String[] args) {
-        // Allow user to input a file for program to find and use
+        // Allow user to input an image file for program to find and use
         // File MUST be inside the working project area
         Scanner userInput = new Scanner(System.in);
         String fileName = "notRealFile.name";
@@ -17,7 +20,7 @@ public class MyServer {
 
         // Continue to prompt user until a valid file is found
         while(!file.exists()) {
-            System.out.print("\nFilename (include extension): ");
+            System.out.print("\nImage Filename (include extension): ");
             fileName = userInput.nextLine();
             file = new File(fileName);
 
@@ -29,29 +32,38 @@ public class MyServer {
 
         // Try to create a new ServerSocket
         try(DatagramSocket socket = new DatagramSocket(PORT)) {
+            System.out.println("Datagram Socket Created");
             while(true) {
-                System.out.println("Listening...");
                 try {
-                    DatagramPacket request = new DatagramPacket(new byte[1024], 1024);
+                    DatagramPacket request = new DatagramPacket(new byte[1024],
+                        1024);
+
+                    // PROGRAM STOPS HERE
                     socket.receive(request);
 
-                    // DoWork
+                    System.out.println("Converted Image Data");
+                    // Convert image file into data
+                    BufferedImage bufferedImage = ImageIO.read(file);
+                    WritableRaster rasterImage = bufferedImage.getRaster();
+                    DataBufferByte imageData = (DataBufferByte) rasterImage.getDataBuffer();
+                    byte[] data = imageData.getData();
 
-                    // -------------------------------------------------------
-                    // - Remove comments after DoWork is done                -
-                    // - Change <DATA> and <DATA_INFO> to appropriate values -
-                    // -------------------------------------------------------
-                    //DatagramPacket response - new DatagramPacket(<DATA>, <DATA>.length,
-                    //    resquest.getAddress(), request.getPort());
-                    //socket.send(response);
-                    //
-                    audit.info("<DATA_INFO>" + " sent to " + request.getAddress());
+                    // Send imageData as Packets
+                    DatagramPacket response = new DatagramPacket(data,
+                        data.length, request.getAddress(), request.getPort());
+                    socket.send(response);
+
+                    System.out.println("Data packets sent");
+
+                    audit.info(data + " sent to " + request.getAddress());
                 } catch (IOException e) {
                     errors.log(Level.SEVERE, e.getMessage(), e);
+                    System.out.println("Bad things 2");
                 }
             }
         } catch (IOException e) {
             errors.log(Level.SEVERE, e.getMessage(), e);
+            System.out.println("Bad things 1");
         }
     }
 }
