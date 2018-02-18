@@ -10,34 +10,53 @@ public class MyServer {
     public static void main(String[] args) {
         // Try to create a new ServerSocket
         try(DatagramSocket socket = new DatagramSocket(PORT)) {
-            System.out.println("Datagram Socket Created");
             while(true) {
                 try {
-                    DatagramPacket request = new DatagramPacket(new byte[1024],
-                        1024);
-
-                    // PROGRAM STOPS HERE
+                    DatagramPacket request = new DatagramPacket(new byte[4096],
+                        4096);
                     socket.receive(request);
 
-                    // DEFINE DATA
-                    // DoThings
+                    File fileOutput = new File(System.getProperty("user.dir") +
+                        "fileOutput.png");
+                    byte[] data = request.getData();
 
-                    // Send imageData as Packets
-                    DatagramPacket response = new DatagramPacket(data,
-                        data.length, request.getAddress(), request.getPort());
-                    socket.send(response);
 
-                    System.out.println("Data packets sent");
+                    ByteArrayInputStream imageByte = new ByteArrayInputStream(data);
+                    InputStream inStream = imageByte;
+                    OutputStream outStream = new FileOutputStream("outputfile.png");
 
+                    byte[] test = new byte[1024];
+                    int var;
+                    while((var = inStream.read(test)) > 0) {
+                        outStream.write(test, 0, var);
+                    }
+                    /*
+                    DataBuffer buffer = new DataBufferByte(data, data.length);
+                    WritableRaster raster =
+                        Raster.createInterleavedRaster(buffer, 100, 100, 2, 1,
+                        new int[]{0, 1, 2}, (Point) null);
+
+                    ColorModel cm = new ComponentColorModel(
+                        ColorModel.getRGBdefault().getColorSpace(),
+                        false, true, Transparency.OPAQUE, DataBuffer.TYPE_BYTE);
+
+                    BufferedImage image =
+                        new BufferedImage(cm, raster, true, null);
+
+                    ImageIO.write(imageByte, "png", fileOutput); */
+
+                    String responseText = "- Image File Processed -";
+                    DatagramPacket response = new DatagramPacket(
+                        responseText.getBytes(), responseText.length(),
+                        request.getAddress(), request.getPort());
+                    socket.send(request);
                     audit.info(data + " sent to " + request.getAddress());
                 } catch (IOException e) {
                     errors.log(Level.SEVERE, e.getMessage(), e);
-                    System.out.println("Bad things 2");
                 }
             }
         } catch (IOException e) {
             errors.log(Level.SEVERE, e.getMessage(), e);
-            System.out.println("Bad things 1");
         }
     }
 }
